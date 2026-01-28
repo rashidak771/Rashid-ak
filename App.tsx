@@ -9,6 +9,11 @@ import Orders from './pages/Orders';
 import Measurements from './pages/Measurements';
 import Staff from './pages/Staff';
 import Login from './pages/Login';
+import Inventory from './pages/Inventory';
+import Expenses from './pages/Expenses';
+import Services from './pages/Services';
+import Payments from './pages/Payments';
+import Settings from './pages/Settings';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useApp();
@@ -25,14 +30,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-// Placeholder components for other modules to keep code within limit
-const Placeholder = ({ name }: { name: string }) => (
-  <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
-    <h2 className="text-2xl font-bold mb-2">{name}</h2>
-    <p>This module is currently being configured.</p>
-  </div>
-);
-
 const AppRoutes = () => {
   return (
     <Routes>
@@ -42,11 +39,11 @@ const AppRoutes = () => {
       <Route path="/orders" element={<Layout><Orders /></Layout>} />
       <Route path="/measurements" element={<Layout><Measurements /></Layout>} />
       <Route path="/staff" element={<Layout><Staff /></Layout>} />
-      <Route path="/inventory" element={<Layout><Placeholder name="Inventory Management" /></Layout>} />
-      <Route path="/expenses" element={<Layout><Placeholder name="Expense Tracker" /></Layout>} />
-      <Route path="/services" element={<Layout><Placeholder name="Service Catalog" /></Layout>} />
-      <Route path="/payments" element={<Layout><Placeholder name="Payments & Invoicing" /></Layout>} />
-      <Route path="/settings" element={<Layout><Placeholder name="System Settings" /></Layout>} />
+      <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
+      <Route path="/expenses" element={<Layout><Expenses /></Layout>} />
+      <Route path="/services" element={<Layout><Services /></Layout>} />
+      <Route path="/payments" element={<Layout><Payments /></Layout>} />
+      <Route path="/settings" element={<Layout><Settings /></Layout>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
