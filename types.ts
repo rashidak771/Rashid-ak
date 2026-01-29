@@ -18,6 +18,7 @@ export interface User {
   role: UserRole;
   username: string;
   salary?: number;
+  lastSalaryPaid?: string;
 }
 
 export interface Customer {
@@ -81,4 +82,11 @@ export interface InventoryItem {
   stock: number;
   unit: string;
   lowStockThreshold: number;
+}
+
+export interface ShopSettings {
+  taxRate: number;
+  shopName: string;
+  address: string;
+  currency: string;
 }

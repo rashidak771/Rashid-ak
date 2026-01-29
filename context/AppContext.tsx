@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserRole, Customer, Order, Measurement, Service, InventoryItem, Expense, OrderStatus } from '../types';
+import { User, UserRole, Customer, Order, Measurement, Service, InventoryItem, Expense, OrderStatus, ShopSettings } from '../types';
 
 interface AppContextType {
   currentUser: User | null;
@@ -19,6 +19,8 @@ interface AppContextType {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   users: User[];
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  shopSettings: ShopSettings;
+  setShopSettings: React.Dispatch<React.SetStateAction<ShopSettings>>;
   logout: () => void;
 }
 
@@ -75,6 +77,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ];
   });
 
+  const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
+    const saved = localStorage.getItem('stitchflow_settings');
+    return saved ? JSON.parse(saved) : {
+      taxRate: 5,
+      shopName: 'StitchFlow Pro',
+      address: '123 Fashion Street, New Delhi',
+      currency: '₹'
+    };
+  });
+
   useEffect(() => {
     localStorage.setItem('stitchflow_user', JSON.stringify(currentUser));
     localStorage.setItem('stitchflow_customers', JSON.stringify(customers));
@@ -84,7 +96,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('stitchflow_inventory', JSON.stringify(inventory));
     localStorage.setItem('stitchflow_expenses', JSON.stringify(expenses));
     localStorage.setItem('stitchflow_staff', JSON.stringify(users));
-  }, [currentUser, customers, orders, measurements, services, inventory, expenses, users]);
+    localStorage.setItem('stitchflow_settings', JSON.stringify(shopSettings));
+  }, [currentUser, customers, orders, measurements, services, inventory, expenses, users, shopSettings]);
 
   const logout = () => {
     setCurrentUser(null);
@@ -101,6 +114,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       inventory, setInventory,
       expenses, setExpenses,
       users, setUsers,
+      shopSettings, setShopSettings,
       logout
     }}>
       {children}

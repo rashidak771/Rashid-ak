@@ -10,7 +10,8 @@ import {
   TrendingDown, 
   UserCircle, 
   Settings,
-  Ruler
+  Ruler,
+  PieChart
 } from 'lucide-react';
 
 export const APP_THEME = {
@@ -28,6 +29,7 @@ export const NAVIGATION_ITEMS = [
   { name: 'Orders', path: '/orders', icon: <ShoppingBag className="w-5 h-5" />, roles: ['OWNER', 'TAILOR'] },
   { name: 'Inventory', path: '/inventory', icon: <Package className="w-5 h-5" />, roles: ['OWNER'] },
   { name: 'Expenses', path: '/expenses', icon: <TrendingDown className="w-5 h-5" />, roles: ['OWNER'] },
+  { name: 'Reports', path: '/reports', icon: <PieChart className="w-5 h-5" />, roles: ['OWNER'] },
   { name: 'Services', path: '/services', icon: <Scissors className="w-5 h-5" />, roles: ['OWNER'] },
   { name: 'Payments', path: '/payments', icon: <CreditCard className="w-5 h-5" />, roles: ['OWNER'] },
   { name: 'Staff', path: '/staff', icon: <UserCircle className="w-5 h-5" />, roles: ['OWNER'] },

@@ -14,6 +14,7 @@ import Expenses from './pages/Expenses';
 import Services from './pages/Services';
 import Payments from './pages/Payments';
 import Settings from './pages/Settings';
+import Reports from './pages/Reports';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useApp();
@@ -41,6 +42,7 @@ const AppRoutes = () => {
       <Route path="/staff" element={<Layout><Staff /></Layout>} />
       <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
       <Route path="/expenses" element={<Layout><Expenses /></Layout>} />
+      <Route path="/reports" element={<Layout><Reports /></Layout>} />
       <Route path="/services" element={<Layout><Services /></Layout>} />
       <Route path="/payments" element={<Layout><Payments /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />

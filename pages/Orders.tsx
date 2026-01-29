@@ -22,7 +22,7 @@ import { Order, OrderStatus, UserRole, Measurement } from '../types';
 import { MOCK_SHIRT_FIELDS, MOCK_PANT_FIELDS } from '../constants';
 
 const Orders: React.FC = () => {
-  const { orders, setOrders, customers, services, users, currentUser, measurements, setMeasurements } = useApp();
+  const { orders, setOrders, customers, services, users, currentUser, measurements, setMeasurements, shopSettings } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickMeasureOpen, setIsQuickMeasureOpen] = useState(false);
   const [filter, setFilter] = useState<OrderStatus | 'All'>('All');
@@ -38,12 +38,18 @@ const Orders: React.FC = () => {
     tailorId: ''
   });
 
-  const totalAmount = useMemo(() => {
+  const baseAmount = useMemo(() => {
     return formData.items.reduce((sum, item) => {
       const service = services.find(s => s.id === item.serviceId);
       return sum + (service ? service.basePrice * item.quantity : 0);
     }, 0);
   }, [formData.items, services]);
+
+  const taxAmount = useMemo(() => {
+    return (baseAmount * (shopSettings.taxRate || 0)) / 100;
+  }, [baseAmount, shopSettings.taxRate]);
+
+  const totalAmount = baseAmount + taxAmount;
 
   const handleAddItem = () => {
     setFormData({
@@ -122,7 +128,7 @@ const Orders: React.FC = () => {
       assignedTailorId: tailor?.id,
       assignedTailorName: tailor?.name,
       createdAt: new Date().toISOString(),
-      taxAmount: 0 
+      taxAmount: taxAmount 
     };
 
     setOrders([newOrder, ...orders]);
@@ -161,7 +167,7 @@ const Orders: React.FC = () => {
         </head>
         <body>
           <div class="header">
-            <h1>STITCHFLOW PRO - JOB CARD</h1>
+            <h1>${shopSettings.shopName} - JOB CARD</h1>
             <div class="order-info">
               <div>
                 <p><strong>ORDER:</strong> ${order.orderNumber}</p>
@@ -520,6 +526,16 @@ const Orders: React.FC = () => {
             </form>
 
             <div className="p-10 bg-slate-900 border-t border-slate-800">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-6">
+                 <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Subtotal</p>
+                    <p className="text-xl font-black text-white">₹{baseAmount.toLocaleString()}</p>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Tax ({shopSettings.taxRate}%)</p>
+                    <p className="text-xl font-black text-indigo-400">₹{taxAmount.toLocaleString()}</p>
+                 </div>
+              </div>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Gross Processing Value</p>
