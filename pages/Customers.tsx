@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Plus, 
@@ -14,7 +14,10 @@ import {
   ExternalLink,
   MapPin,
   Calendar,
-  ShoppingBag
+  ShoppingBag,
+  ChevronDown,
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 import { Customer, Order } from '../types';
 
@@ -26,6 +29,7 @@ const Customers: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
+  const [expandedYears, setExpandedYears] = useState<Record<number, boolean>>({});
 
   // Robust Search Logic
   const filteredCustomers = customers.filter(c => {
@@ -56,7 +60,15 @@ const Customers: React.FC = () => {
 
   const handleViewHistory = (customer: Customer) => {
     setViewingCustomer(customer);
+    setExpandedYears({}); // Reset expanded states
     setIsHistoryOpen(true);
+  };
+
+  const toggleYear = (year: number) => {
+    setExpandedYears(prev => ({
+      ...prev,
+      [year]: !prev[year]
+    }));
   };
 
   const handleSaveCustomer = (e: React.FormEvent) => {
@@ -71,7 +83,6 @@ const Customers: React.FC = () => {
         c.id === editingCustomer.id ? { ...c, ...formData } : c
       ));
     } else {
-      // Check for duplicate phone (case insensitive check)
       if (customers.some(c => c.phone.trim() === formData.phone.trim())) {
         alert("Customer with this phone number already exists!");
         return;
@@ -94,10 +105,25 @@ const Customers: React.FC = () => {
     }
   };
 
-  // Get customer specific orders
-  const getCustomerOrders = (customerId: string) => {
-    return orders.filter(o => o.customerId === customerId);
-  };
+  // Grouped History Logic
+  const yearlyHistory = useMemo(() => {
+    if (!viewingCustomer) return {};
+    const customerOrders = orders.filter(o => o.customerId === viewingCustomer.id);
+    
+    return customerOrders.reduce((acc, order) => {
+      const year = new Date(order.createdAt).getFullYear();
+      if (!acc[year]) {
+        acc[year] = { orders: [], totalSpend: 0, count: 0 };
+      }
+      acc[year].orders.push(order);
+      acc[year].totalSpend += order.totalAmount;
+      acc[year].count += 1;
+      return acc;
+    }, {} as Record<number, { orders: Order[], totalSpend: number, count: number }>);
+  }, [viewingCustomer, orders]);
+
+  // Sort years descending
+  const sortedYears = Object.keys(yearlyHistory).map(Number).sort((a, b) => b - a);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -215,7 +241,7 @@ const Customers: React.FC = () => {
       {/* ADD/EDIT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden ring-1 ring-white/10">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-md:max-w-md overflow-hidden ring-1 ring-white/10">
             <div className="p-7 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
@@ -292,7 +318,7 @@ const Customers: React.FC = () => {
         </div>
       )}
 
-      {/* HISTORY MODAL */}
+      {/* HISTORY MODAL (REFACTORED) */}
       {isHistoryOpen && viewingCustomer && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in zoom-in duration-300">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden h-[85vh] flex flex-col">
@@ -314,90 +340,129 @@ const Customers: React.FC = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto p-7 no-scrollbar space-y-8">
-              {/* Contact Card */}
+              {/* Profile Overview Card */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Email Contact</label>
-                  <p className="text-slate-700 font-semibold">{viewingCustomer.email || 'No email provided'}</p>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Primary Contact</label>
+                  <p className="text-slate-700 font-semibold">{viewingCustomer.email || 'No email registered'}</p>
                 </div>
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Address</label>
-                  <p className="text-slate-700 font-semibold leading-relaxed">{viewingCustomer.address || 'No address provided'}</p>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Registered Address</label>
+                  <p className="text-slate-700 font-semibold leading-relaxed line-clamp-2">{viewingCustomer.address || 'Address not provided'}</p>
                 </div>
               </div>
 
-              {/* Order History */}
+              {/* REFACTORED Order History with Grouping */}
               <div>
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-indigo-600" /> Order History
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-tight">
+                    <ShoppingBag className="w-6 h-6 text-indigo-600" /> 
+                    Engagement Ledger
                   </h3>
-                  <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
-                    {getCustomerOrders(viewingCustomer.id).length} Orders Total
-                  </span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-black">
+                    {orders.filter(o => o.customerId === viewingCustomer.id).length} Orders Total
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
-                  {getCustomerOrders(viewingCustomer.id).map(order => (
-                    <div key={order.id} className="group p-5 bg-white rounded-2xl border border-slate-200 hover:border-indigo-200 transition-all hover:shadow-xl hover:shadow-indigo-500/5 relative">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="font-black text-slate-400 group-hover:text-indigo-600 transition-colors">{order.orderNumber}</span>
-                          <span className="text-xs font-bold text-slate-500 px-2 py-1 bg-slate-100 rounded-lg">{new Date(order.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        <div className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm
-                          ${order.status === 'Delivered' ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'}`}>
-                          {order.status}
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {order.items.map((item, idx) => (
-                          <span key={idx} className="bg-slate-50 border border-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-600">
-                            {item.serviceName}
-                          </span>
-                        ))}
-                      </div>
+                  {sortedYears.length > 0 ? (
+                    sortedYears.map(year => {
+                      const data = yearlyHistory[year];
+                      const isExpanded = expandedYears[year];
 
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                        <div className="flex gap-4">
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Price</p>
-                            <p className="text-sm font-black text-slate-900">₹{order.totalAmount}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Paid</p>
-                            <p className="text-sm font-black text-emerald-600">₹{order.advancePaid + (order.status === 'Delivered' ? order.totalAmount - order.advancePaid : 0)}</p>
-                          </div>
+                      return (
+                        <div key={year} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:border-indigo-100 transition-all">
+                          {/* Year Summary Header */}
+                          <button 
+                            onClick={() => toggleYear(year)}
+                            className={`w-full flex items-center justify-between p-5 text-left transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100' : 'bg-white'}`}
+                          >
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? <ChevronDown className="w-5 h-5 text-indigo-600" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+                                <span className="text-2xl font-black text-slate-900">{year}</span>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orders</span>
+                                  <span className="text-sm font-bold text-slate-700">{data.count} Projects</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Yearly Spend</span>
+                                  <span className="text-sm font-black text-emerald-600">₹{data.totalSpend.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <TrendingUp className={`w-6 h-6 ${isExpanded ? 'text-indigo-200' : 'text-slate-100'} transition-colors`} />
+                          </button>
+
+                          {/* Individual Orders List */}
+                          {isExpanded && (
+                            <div className="p-5 space-y-4 bg-slate-50/30">
+                              {data.orders.map(order => (
+                                <div key={order.id} className="group p-5 bg-white rounded-xl border border-slate-200 hover:border-indigo-200 transition-all hover:shadow-lg relative">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-black text-slate-400 group-hover:text-indigo-600 transition-colors uppercase text-xs">{order.orderNumber}</span>
+                                      <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{new Date(order.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-sm
+                                      ${order.status === 'Delivered' ? 'bg-slate-900 text-white' : 'bg-indigo-600 text-white'}`}>
+                                      {order.status}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-1.5 mb-5">
+                                    {order.items.map((item, idx) => (
+                                      <span key={idx} className="bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-600 uppercase">
+                                        {item.serviceName}
+                                      </span>
+                                    ))}
+                                  </div>
+
+                                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                                    <div className="flex gap-6">
+                                      <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Value</p>
+                                        <p className="text-sm font-black text-slate-900">₹{order.totalAmount}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Settled</p>
+                                        <p className="text-sm font-black text-emerald-600">₹{order.advancePaid + (order.status === 'Delivered' ? order.totalAmount - order.advancePaid : 0)}</p>
+                                      </div>
+                                    </div>
+                                    <button className="text-indigo-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 hover:bg-indigo-50 px-3 py-2 rounded-xl transition-all">
+                                      Receipt <ExternalLink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <button className="text-indigo-600 text-xs font-bold flex items-center gap-1 hover:underline">
-                          View Invoice <ExternalLink className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {getCustomerOrders(viewingCustomer.id).length === 0 && (
-                    <div className="bg-slate-50 py-16 rounded-3xl border-2 border-dashed border-slate-200 text-center">
-                      <ShoppingBag className="w-12 h-12 mx-auto text-slate-200 mb-4" />
-                      <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No orders found for this customer</p>
+                      );
+                    })
+                  ) : (
+                    <div className="bg-slate-50 py-20 rounded-[2rem] border-2 border-dashed border-slate-200 text-center">
+                      <ShoppingBag className="w-16 h-16 mx-auto text-slate-200 mb-6" />
+                      <p className="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">Zero transactional history detected</p>
                     </div>
                   )}
                 </div>
               </div>
             </div>
             
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4">
+            <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
               <button 
                 onClick={() => {setIsHistoryOpen(false); handleOpenModal(viewingCustomer);}}
-                className="flex-1 py-3.5 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-4 bg-white border-2 border-slate-200 rounded-2xl font-black text-slate-600 hover:bg-slate-100 transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest"
               >
                 <Edit className="w-4 h-4" /> Edit Profile
               </button>
               <button 
-                className="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 text-xs uppercase tracking-widest active:scale-95"
               >
-                Create New Order
+                Book New Order
               </button>
             </div>
           </div>
